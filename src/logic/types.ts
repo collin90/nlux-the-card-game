@@ -29,6 +29,8 @@ export interface BadgeAnimal {
 
 export type GamePhase = 'playing' | 'win' | 'giveup' | 'gameover';
 
+export type DrawMode = 'auto' | 'manual';
+
 export type ValidationResult =
   | { valid: false }
   | { valid: true; lhs: Card[]; rhs: Card; preview: string };
@@ -44,4 +46,5 @@ export interface GameState {
   lastPlayWasInvalid: boolean;
   showGiveUpConfirm: boolean;
   badge: BadgeAnimal | null;
+  drawMode: DrawMode;
 }

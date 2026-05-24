@@ -7,6 +7,8 @@ import {
   IconButton,
   Tooltip,
   Chip,
+  Switch,
+  FormControlLabel,
   keyframes,
 } from '@mui/material';
 import HelpOutlinedIcon from '@mui/icons-material/HelpOutlined';
@@ -33,7 +35,7 @@ const waveAnim = keyframes`
 `;
 
 const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
-  const { state, dispatch, validation, resultCard, selectionDepth } = useGameState();
+  const { state, dispatch, validation, resultCard, selectionDepth, canDraw } = useGameState();
   const { bestScore, updateBestScore } = useBestScore();
   const [showRules, setShowRules] = useState(false);
 
@@ -84,6 +86,12 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
         case 'g':
         case 'G':
           dispatch({ type: 'REQUEST_GIVE_UP' });
+          break;
+        case 'Shift':
+          if (state.drawMode === 'manual') {
+            e.preventDefault();
+            dispatch({ type: 'DRAW_CARD' });
+          }
           break;
         default:
           break;
@@ -183,6 +191,35 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
             />
           )}
 
+          {/* Draw mode toggle */}
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={state.drawMode === 'manual'}
+                onChange={() =>
+                  dispatch({
+                    type: 'SET_DRAW_MODE',
+                    mode: state.drawMode === 'auto' ? 'manual' : 'auto',
+                  })
+                }
+                sx={{
+                  '& .MuiSwitch-switchBase.Mui-checked': { color: '#00B4D8' },
+                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                    backgroundColor: '#0077B6',
+                  },
+                }}
+              />
+            }
+            label={
+              <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(144,224,239,0.8)', whiteSpace: 'nowrap' }}>
+                {state.drawMode === 'manual' ? 'Manual Draw' : 'Auto Draw'}
+              </Typography>
+            }
+            labelPlacement="start"
+            sx={{ mr: 0, ml: 0, gap: 0.25 }}
+          />
+
           <Tooltip title="How to Play (?)">
             <IconButton
               size="small"
@@ -275,7 +312,11 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
 
           {/* Deck — on the right since new cards draw from the right */}
           <Box sx={{ flexShrink: 0 }}>
-            <Deck cardCount={state.deck.length} />
+            <Deck
+              cardCount={state.deck.length}
+              canDraw={canDraw}
+              onDraw={() => dispatch({ type: 'DRAW_CARD' })}
+            />
           </Box>
         </Box>
       </Box>

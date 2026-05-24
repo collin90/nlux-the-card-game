@@ -1,5 +1,5 @@
 import { useReducer, useMemo } from 'react';
-import type { GameState, GamePhase, Card } from '../logic/types';
+import type { GameState, GamePhase, Card, DrawMode } from '../logic/types';
 import { createDeck, shuffle } from '../logic/deck';
 import {
   validateEquation,
@@ -17,6 +17,8 @@ type GameAction =
   | { type: 'NEW_GAME' }
   | { type: 'TOGGLE_SELECT'; cardId: string }
   | { type: 'PLAY_EQUATION' }
+  | { type: 'DRAW_CARD' }
+  | { type: 'SET_DRAW_MODE'; mode: DrawMode }
   | { type: 'CLEAR_SELECTION' }
   | { type: 'FOCUS_NEXT' }
   | { type: 'FOCUS_PREV' }
@@ -44,6 +46,7 @@ function createInitialState(): GameState {
     lastPlayWasInvalid: false,
     showGiveUpConfirm: false,
     badge: null,
+    drawMode: 'auto',
   };
 }
 
@@ -53,9 +56,6 @@ function determinePhase(hand: Card[], deck: Card[]): GamePhase {
   if (hand.length === 0 && deck.length === 0) return 'win';
   if (!hasAnyValidEquation(hand)) {
     return deck.length === 0 ? 'gameover' : 'playing';
-    // Note: we only auto-trigger 'gameover' when deck is empty.
-    // When deck has cards, the player might draw better cards — we never auto-lose.
-    // (The deck.length > 0 case returns 'playing'; user clicks Give Up if stuck.)
   }
   return 'playing';
 }
@@ -64,8 +64,14 @@ function determinePhase(hand: Card[], deck: Card[]): GamePhase {
 
 function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
-    case 'NEW_GAME':
-      return createInitialState();
+    case 'NEW_GAME': {
+      // Preserve draw mode preference across new games
+      const fresh = createInitialState();
+      return { ...fresh, drawMode: state.drawMode };
+    }
+
+    case 'SET_DRAW_MODE':
+      return { ...state, drawMode: action.mode };
 
     case 'TOGGLE_SELECT': {
       if (state.phase !== 'playing') return state;
@@ -93,19 +99,24 @@ function reducer(state: GameState, action: GameAction): GameState {
       const playedIds = new Set([...lhs.map(c => c.id), rhs.id]);
       const newHand = state.hand.filter(c => !playedIds.has(c.id));
 
-      const drawCount = Math.min(7 - newHand.length, state.deck.length);
-      const drawnCards = state.deck.slice(0, drawCount);
-      const newDeck = state.deck.slice(drawCount);
-      const filledHand = [...newHand, ...drawnCards];
-
       const newOcean = [
         ...state.ocean,
         { id: uuid(), lhs, rhs, zone, pointValue },
       ];
 
+      // In auto mode, draw back up to 7 immediately.
+      // In manual mode, leave the hand as-is for the player to draw manually.
+      let filledHand = newHand;
+      let newDeck = state.deck;
+      if (state.drawMode === 'auto') {
+        const drawCount = Math.min(7 - newHand.length, state.deck.length);
+        const drawnCards = state.deck.slice(0, drawCount);
+        newDeck = state.deck.slice(drawCount);
+        filledHand = [...newHand, ...drawnCards];
+      }
+
       const phase = determinePhase(filledHand, newDeck);
-      const badge =
-        phase !== 'playing' ? assignBadge(newOcean) : null;
+      const badge = phase !== 'playing' ? assignBadge(newOcean) : null;
       const score = phase !== 'playing' ? computeScore(filledHand) : 0;
 
       return {
@@ -119,6 +130,30 @@ function reducer(state: GameState, action: GameAction): GameState {
         selectedIds: new Set(),
         lastPlayWasInvalid: false,
         focusedIndex: Math.min(state.focusedIndex, Math.max(0, filledHand.length - 1)),
+      };
+    }
+
+    case 'DRAW_CARD': {
+      if (state.phase !== 'playing') return state;
+      if (state.drawMode !== 'manual') return state;
+      if (state.deck.length === 0) return state;
+      if (state.hand.length >= 7) return state;
+
+      const drawnCard = state.deck[0];
+      const newDeck = state.deck.slice(1);
+      const newHand = [...state.hand, drawnCard];
+
+      const phase = determinePhase(newHand, newDeck);
+      const badge = phase !== 'playing' ? assignBadge(state.ocean) : null;
+      const score = phase !== 'playing' ? computeScore(newHand) : 0;
+
+      return {
+        ...state,
+        deck: newDeck,
+        hand: newHand,
+        phase,
+        score,
+        badge,
       };
     }
 
@@ -204,5 +239,14 @@ export function useGameState() {
     [validation, selectedCards.length]
   );
 
-  return { state, dispatch, selectedCards, validation, resultCard, selectionDepth };
+  const canDraw = useMemo(
+    () =>
+      state.drawMode === 'manual' &&
+      state.phase === 'playing' &&
+      state.deck.length > 0 &&
+      state.hand.length < 7,
+    [state.drawMode, state.phase, state.deck.length, state.hand.length]
+  );
+
+  return { state, dispatch, selectedCards, validation, resultCard, selectionDepth, canDraw };
 }
