@@ -152,13 +152,11 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, showGiveUpConfirm: false };
 
     case 'CONFIRM_GIVE_UP': {
-      const score = computeScore(state.hand);
-      const badge = assignBadge(state.ocean);
       return {
         ...state,
         phase: 'giveup',
-        score,
-        badge,
+        score: 0,
+        badge: null,
         showGiveUpConfirm: false,
       };
     }

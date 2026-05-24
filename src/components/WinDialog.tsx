@@ -224,12 +224,15 @@ const WinDialog: React.FC<WinDialogProps> = ({
           )}
           {phase === 'giveup' && (
             <>
-              <Typography sx={{ fontSize: 52, lineHeight: 1, mb: 0.5 }}>🌧️</Typography>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: 'rgba(200,200,220,0.85)', mb: 0.5 }}>
-                Abandoned Ship
+              <Typography sx={{ fontSize: 52, lineHeight: 1, mb: 1 }}>⚓</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 800, color: 'rgba(200,200,220,0.85)', mb: 1 }}>
+                Voyage Abandoned
               </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(200,200,220,0.5)' }}>
+              <Typography variant="body2" sx={{ color: 'rgba(200,200,220,0.45)', mb: 1 }}>
                 The sea was too rough today.
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(200,200,220,0.3)', fontSize: 12 }}>
+                No score recorded.
               </Typography>
             </>
           )}
@@ -245,9 +248,11 @@ const WinDialog: React.FC<WinDialogProps> = ({
             </>
           )}
 
-          <ScoreDisplay score={score} bestScore={bestScore} isWin={phase === 'win'} />
-
-          {badge && <BadgeDisplay badge={badge} />}
+          {/* Score + badge only for win and gameover, not give-up */}
+          {phase !== 'giveup' && (
+            <ScoreDisplay score={score} bestScore={bestScore} isWin={phase === 'win'} />
+          )}
+          {phase !== 'giveup' && badge && <BadgeDisplay badge={badge} />}
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
           <Button

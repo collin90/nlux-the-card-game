@@ -37,9 +37,9 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
   const { bestScore, updateBestScore } = useBestScore();
   const [showRules, setShowRules] = useState(false);
 
-  // Update best score when game ends
+  // Update best score when game ends (not on give-up)
   useEffect(() => {
-    if (state.phase !== 'playing' && state.score >= 0) {
+    if ((state.phase === 'win' || state.phase === 'gameover') && state.score >= 0) {
       updateBestScore(state.score);
     }
   }, [state.phase, state.score, updateBestScore]);
@@ -47,7 +47,6 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
   // Keyboard handler
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      // Allow keys through when dialogs are open
       if (state.showGiveUpConfirm || state.phase !== 'playing') return;
       if (showRules && e.key !== '?') return;
 
@@ -149,10 +148,10 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid rgba(144,224,239,0.15)',
           zIndex: 2,
+          flexShrink: 0,
         }}
       >
         <Toolbar sx={{ gap: 1, minHeight: '52px !important' }}>
-          {/* Title */}
           <Typography
             variant="h6"
             sx={{
@@ -170,7 +169,6 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
 
           <Box sx={{ flex: 1 }} />
 
-          {/* Score chips */}
           <Chip
             label={`Deck: ${state.deck.length}`}
             size="small"
@@ -216,12 +214,10 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
               <AddIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-
-          <GiveUpButton onClick={() => dispatch({ type: 'REQUEST_GIVE_UP' })} />
         </Toolbar>
       </AppBar>
 
-      {/* Main play area */}
+      {/* Main play area — ocean on top, hand on bottom */}
       <Box
         sx={{
           flex: 1,
@@ -231,13 +227,22 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
           zIndex: 1,
         }}
       >
-        {/* Hand + deck row */}
+        {/* Ocean — takes up the top/flex portion */}
+        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+          <OceanDisplay equations={state.ocean} />
+        </Box>
+
+        {/* Hand + deck row — pinned at the bottom */}
         <Box
           sx={{
+            borderTop: '2px solid rgba(144,224,239,0.15)',
+            background: 'rgba(2,20,60,0.55)',
+            backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             px: 2,
-            pt: 1.5,
+            pt: 1,
+            pb: 1,
             gap: 2,
             flexShrink: 0,
           }}
@@ -257,7 +262,7 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
             }}
           />
 
-          {/* Hand + controls */}
+          {/* Hand + equation controls */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             <Hand
               hand={state.hand}
@@ -277,13 +282,12 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
               />
             </Box>
 
-            <CastButton disabled={!validation.valid} onClick={handlePlay} />
+            {/* Cast + Give Up side by side */}
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', justifyContent: 'center' }}>
+              <CastButton disabled={!validation.valid} onClick={handlePlay} />
+              <GiveUpButton onClick={() => dispatch({ type: 'REQUEST_GIVE_UP' })} />
+            </Box>
           </Box>
-        </Box>
-
-        {/* Ocean */}
-        <Box sx={{ flex: 1, overflow: 'hidden', mt: 1.5 }}>
-          <OceanDisplay equations={state.ocean} />
         </Box>
       </Box>
 
