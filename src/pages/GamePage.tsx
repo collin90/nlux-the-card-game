@@ -44,7 +44,6 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));   // < 600px
-  const isCompact = useMediaQuery(theme.breakpoints.down('md'));  // < 900px
 
   // Update best score when game ends (not on give-up)
   useEffect(() => {
@@ -242,11 +241,9 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
               />
             }
             label={
-              !isCompact ? (
-                <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(144,224,239,0.8)', whiteSpace: 'nowrap' }}>
-                  {state.drawMode === 'manual' ? 'Manual Draw' : 'Auto Draw'}
-                </Typography>
-              ) : null
+              <Typography sx={{ fontSize: { xs: 10, sm: 11 }, fontWeight: 600, color: 'rgba(144,224,239,0.8)', whiteSpace: 'nowrap' }}>
+                {state.drawMode === 'manual' ? 'Manual Draw' : 'Auto Draw'}
+              </Typography>
             }
             labelPlacement="start"
             sx={{ mr: 0, ml: 0, gap: 0.25 }}
