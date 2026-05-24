@@ -12,10 +12,10 @@ const OceanDisplay: React.FC<OceanDisplayProps> = ({ equations }) => {
   const twilight = equations.filter(e => e.zone === 'twilight');
   const midnight = equations.filter(e => e.zone === 'midnight');
 
+  // Fill the parent height; each OceanZone takes flex:1 of that height.
+  // No overflow/scroll here — zones shrink their content to fit.
   return (
-    // minHeight: 100% so zones fill the scroll container on desktop
-    // when there are few equations; content expands naturally when more are added
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <OceanZone zone="daylight" equations={daylight} />
       <OceanZone zone="twilight" equations={twilight} />
       <OceanZone zone="midnight" equations={midnight} />

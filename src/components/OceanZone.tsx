@@ -26,62 +26,54 @@ const ZONE_CONFIG: Record<OceanZoneType, { background: string; emoji: string; bo
   },
 };
 
-// Dimensions of a full-scale EquationStack for a typical 2-LHS equation
-// (worst-case is more LHS cards, but this is used as the sizing basis)
-const BASE_STACK_W = 88;  // px at zoom=1
-const BASE_STACK_H = 114; // px at zoom=1
-const ITEM_GAP = 12;      // px between stacks
-const ZONE_PADDING = 10;  // px top/bottom padding inside the equations area
+// Dimensions of a full-scale EquationStack (at zoom 1)
+const BASE_STACK_W = 88;   // px — typical width including stack offset
+const BASE_STACK_H = 114;  // px — typical height including stack offset
+const ITEM_GAP     = 12;   // px — gap between stacks
+const H_PAD        = 14;   // px — left/right padding in content area
+const V_PAD        = 10;   // px — top/bottom padding in content area
 
 const OceanZone: React.FC<OceanZoneProps> = ({ zone, equations }) => {
   const cfg = ZONE_CONFIG[zone];
 
-  const zoneRef = useRef<HTMLDivElement>(null);    // measures zone height
-  const contentRef = useRef<HTMLDivElement>(null); // measures available width
+  const zoneRef    = useRef<HTMLDivElement>(null); // whole zone — measures height
+  const contentRef = useRef<HTMLDivElement>(null); // equation row — measures width
 
   const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
-    const zoneEl = zoneRef.current;
+    const zoneEl    = zoneRef.current;
     const contentEl = contentRef.current;
     if (!zoneEl || !contentEl) return;
 
-    // Given a zoom level z, does everything fit within the zone's current height?
-    const fits = (z: number, availH: number, availW: number): boolean => {
-      const sw = BASE_STACK_W * z;
-      const sh = BASE_STACK_H * z;
-      const perRow = Math.max(1, Math.floor((availW + ITEM_GAP) / (sw + ITEM_GAP)));
-      const rows = Math.ceil(equations.length / perRow);
-      const usedH = rows * sh + (rows - 1) * ITEM_GAP + ZONE_PADDING * 2;
-      return usedH <= availH;
-    };
-
     const compute = () => {
+      const zoneH    = zoneEl.getBoundingClientRect().height;
+      const contentW = contentEl.getBoundingClientRect().width;
+      if (zoneH <= 0 || contentW <= 0) return;
+
       if (equations.length === 0) { setZoom(1); return; }
 
-      const availH = zoneEl.getBoundingClientRect().height;
-      const availW = contentEl.getBoundingClientRect().width;
-      if (availH <= 0 || availW <= 0) return;
+      const N      = equations.length;
+      const availH = zoneH    - V_PAD * 2;
+      const availW = contentW - H_PAD * 2;
 
-      // Fast path: fits at zoom=1?
-      if (fits(1, availH, availW)) { setZoom(1); return; }
+      // Single-row: all stacks side-by-side, no wrapping
+      // Scale must satisfy BOTH:
+      //   N * BASE_W * s + (N-1) * GAP  <=  availW   (width constraint)
+      //   BASE_H * s                    <=  availH   (height constraint)
+      const totalBaseW = N * BASE_STACK_W + (N - 1) * ITEM_GAP;
+      const widthScale  = availW / totalBaseW;
+      const heightScale = availH / BASE_STACK_H;
 
-      // Binary search for largest zoom in [0.2, 1] where everything fits
-      let lo = 0.2, hi = 1.0;
-      for (let i = 0; i < 22; i++) {
-        const mid = (lo + hi) / 2;
-        if (fits(mid, availH, availW)) lo = mid;
-        else hi = mid;
-      }
-      setZoom(lo);
+      const newZoom = Math.min(1, widthScale, heightScale);
+      setZoom(Math.max(0.12, newZoom)); // hard floor so cards never vanish entirely
     };
 
-    // Re-compute whenever zone is resized (window resize, panel resize, etc.)
     const obs = new ResizeObserver(compute);
     obs.observe(zoneEl);
     compute();
     return () => obs.disconnect();
-  }, [equations.length]); // re-run whenever equation count changes
+  }, [equations.length]);
 
   return (
     <Box
@@ -89,15 +81,15 @@ const OceanZone: React.FC<OceanZoneProps> = ({ zone, equations }) => {
       data-zone={zone}
       sx={{
         background: cfg.background,
-        flex: 1,         // split available ocean space equally on desktop
-        minHeight: 120,  // never collapse below this
+        flex: 1,              // divide ocean height equally across all 3 zones
+        minHeight: 0,         // allow flex child to shrink below content size
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'stretch',
-        overflow: 'hidden',
+        overflow: 'hidden',   // never grow or scroll
       }}
     >
-      {/* Zone emoji — fixed column on the left */}
+      {/* Fixed emoji column */}
       <Box
         sx={{
           width: 52,
@@ -112,23 +104,24 @@ const OceanZone: React.FC<OceanZoneProps> = ({ zone, equations }) => {
         {cfg.emoji}
       </Box>
 
-      {/* Equations — auto-scaling to stay within zone height */}
+      {/* Single-row equation area — stacks scale to fit, never wrap */}
       <Box
         ref={contentRef}
         sx={{
           flex: 1,
           display: 'flex',
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',       // ← single row, no wrapping
+          flexDirection: 'row',
+          alignItems: 'center',
           gap: `${ITEM_GAP}px`,
-          padding: `${ZONE_PADDING}px 14px`,
-          alignContent: 'flex-start',
+          padding: `${V_PAD}px ${H_PAD}px`,
           overflow: 'hidden',
           minWidth: 0,
         }}
       >
         {equations.map(eq => (
-          // CSS zoom shrinks both rendered size AND layout footprint —
-          // flexbox sees the zoomed size, so wrap thresholds are correct.
+          // CSS zoom shrinks layout footprint AND rendered size —
+          // the equation stacks compress to fit whatever space is available.
           <div key={eq.id} style={{ zoom, flexShrink: 0, lineHeight: 0 }}>
             <EquationStack equation={eq} />
           </div>

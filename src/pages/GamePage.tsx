@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState, useRef } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   Box,
   AppBar,
@@ -40,7 +40,6 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
   const { state, dispatch, validation, resultCard, selectionDepth, canDraw } = useGameState();
   const { bestScore, updateBestScore } = useBestScore();
   const [showRules, setShowRules] = useState(false);
-  const oceanScrollRef = useRef<HTMLDivElement>(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));   // < 600px
@@ -51,18 +50,6 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
       updateBestScore(state.score);
     }
   }, [state.phase, state.score, updateBestScore]);
-
-  // Auto-scroll ocean when a new equation is added
-  useEffect(() => {
-    if (state.ocean.length === 0) return;
-    const latest = state.ocean[state.ocean.length - 1];
-    const container = oceanScrollRef.current;
-    if (!container) return;
-    const zoneEl = container.querySelector(`[data-zone="${latest.zone}"]`);
-    if (zoneEl) {
-      zoneEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, [state.ocean.length]);
 
   // Keyboard handler
   const handleKeyDown = useCallback(
@@ -282,21 +269,8 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
           zIndex: 1,
         }}
       >
-        {/* Ocean — scrollable, fills all remaining space */}
-        <Box
-          ref={oceanScrollRef}
-          sx={{
-            flex: 1,
-            minHeight: 0,   // ← same trick for nested flex
-            overflowY: 'auto',
-            '&::-webkit-scrollbar': { width: 5 },
-            '&::-webkit-scrollbar-track': { background: 'rgba(0,0,0,0.15)' },
-            '&::-webkit-scrollbar-thumb': {
-              background: 'rgba(144,224,239,0.25)',
-              borderRadius: 3,
-            },
-          }}
-        >
+        {/* Ocean — fills remaining space, never scrolls */}
+        <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <OceanDisplay equations={state.ocean} />
         </Box>
 
