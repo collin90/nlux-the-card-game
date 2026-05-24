@@ -27,10 +27,10 @@ const CastButton: React.FC<CastButtonProps> = ({ disabled, onClick }) => {
         onClick={onClick}
         startIcon={<WavesIcon />}
         sx={{
-          minWidth: 200,
-          py: 1.4,
-          px: 4,
-          fontSize: 15,
+          minWidth: { xs: 140, sm: 200 },
+          py: { xs: 1, sm: 1.4 },
+          px: { xs: 2, sm: 4 },
+          fontSize: { xs: 13, sm: 15 },
           fontWeight: 700,
           letterSpacing: 0.5,
           borderRadius: '30px',

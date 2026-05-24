@@ -17,7 +17,7 @@ const Deck: React.FC<DeckProps> = ({ cardCount, canDraw = false, onDraw }) => {
 
   return (
     <Box
-      sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}
+      sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}
       onClick={canDraw ? onDraw : undefined}
       title={canDraw ? 'Click to draw a card (Shift)' : undefined}
     >

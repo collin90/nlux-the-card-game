@@ -13,7 +13,7 @@ import {
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  horizontalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -168,18 +168,17 @@ const Hand: React.FC<HandProps> = ({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <SortableContext items={cardIds} strategy={horizontalListSortingStrategy}>
+      <SortableContext items={cardIds} strategy={rectSortingStrategy}>
         <Box
           role="group"
           aria-label="Your Hand"
           sx={{
             display: 'flex',
-            gap: 1.5,
+            gap: { xs: 1, sm: 1.5 },
             alignItems: 'flex-end',
             justifyContent: 'center',
-            minHeight: 116,
-            flexWrap: 'nowrap',
-            padding: '8px 12px',
+            flexWrap: 'wrap',        // allows multi-row on narrow screens
+            padding: { xs: '6px 8px', sm: '8px 12px' },
           }}
         >
           {/* Render hand cards as sortable slots */}

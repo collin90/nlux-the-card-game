@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import {
   Box,
   AppBar,
@@ -9,6 +9,8 @@ import {
   Chip,
   Switch,
   FormControlLabel,
+  useTheme,
+  useMediaQuery,
   keyframes,
 } from '@mui/material';
 import HelpOutlinedIcon from '@mui/icons-material/HelpOutlined';
@@ -38,6 +40,11 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
   const { state, dispatch, validation, resultCard, selectionDepth, canDraw } = useGameState();
   const { bestScore, updateBestScore } = useBestScore();
   const [showRules, setShowRules] = useState(false);
+  const oceanScrollRef = useRef<HTMLDivElement>(null);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));   // < 600px
+  const isCompact = useMediaQuery(theme.breakpoints.down('md'));  // < 900px
 
   // Update best score when game ends (not on give-up)
   useEffect(() => {
@@ -45,6 +52,18 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
       updateBestScore(state.score);
     }
   }, [state.phase, state.score, updateBestScore]);
+
+  // Auto-scroll ocean when a new equation is added
+  useEffect(() => {
+    if (state.ocean.length === 0) return;
+    const latest = state.ocean[state.ocean.length - 1];
+    const container = oceanScrollRef.current;
+    if (!container) return;
+    const zoneEl = container.querySelector(`[data-zone="${latest.zone}"]`);
+    if (zoneEl) {
+      zoneEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [state.ocean.length]);
 
   // Keyboard handler
   const handleKeyDown = useCallback(
@@ -120,7 +139,9 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
   return (
     <Box
       sx={{
-        height: '100vh',
+        // 100dvh respects mobile browser chrome; fall back to 100vh
+        height: '100dvh',
+        '@supports not (height: 100dvh)': { height: '100vh' },
         display: 'flex',
         flexDirection: 'column',
         background: 'linear-gradient(160deg, #03045E 0%, #023e8a 60%, #0077B6 100%)',
@@ -128,7 +149,7 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
         overflow: 'hidden',
       }}
     >
-      {/* Background wave effect */}
+      {/* Background wave (decorative only) */}
       {[0, 1, 2].map(i => (
         <Box
           key={i}
@@ -147,19 +168,26 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
         />
       ))}
 
-      {/* AppBar */}
+      {/* ── AppBar ── sticky at top, responsive */}
       <AppBar
         position="static"
         elevation={0}
         sx={{
-          background: 'rgba(2,62,138,0.7)',
+          background: 'rgba(2,62,138,0.75)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid rgba(144,224,239,0.15)',
           zIndex: 2,
           flexShrink: 0,
         }}
       >
-        <Toolbar sx={{ gap: 1, minHeight: '52px !important' }}>
+        <Toolbar
+          sx={{
+            gap: { xs: 0.5, sm: 1 },
+            minHeight: { xs: '48px !important', sm: '52px !important' },
+            px: { xs: 1, sm: 2 },
+          }}
+        >
+          {/* Title — full on desktop, short on mobile */}
           <Typography
             variant="h6"
             sx={{
@@ -168,16 +196,18 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
               letterSpacing: -0.3,
               cursor: 'pointer',
               flexShrink: 0,
-              mr: 1,
+              fontSize: { xs: 14, sm: 18 },
+              mr: { xs: 0.5, sm: 1 },
             }}
             onClick={onGoHome}
           >
-            🌊 Nautilux: The Card Game
+            {isMobile ? '🌊' : '🌊 Nautilux'}
           </Typography>
 
           <Box sx={{ flex: 1 }} />
 
-          {bestScore !== null && (
+          {/* Best score — hide on small mobile */}
+          {bestScore !== null && !isMobile && (
             <Chip
               label={`Best: ${bestScore}`}
               size="small"
@@ -191,7 +221,7 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
             />
           )}
 
-          {/* Draw mode toggle */}
+          {/* Draw mode toggle — label hidden on compact screens */}
           <FormControlLabel
             control={
               <Switch
@@ -212,9 +242,11 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
               />
             }
             label={
-              <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(144,224,239,0.8)', whiteSpace: 'nowrap' }}>
-                {state.drawMode === 'manual' ? 'Manual Draw' : 'Auto Draw'}
-              </Typography>
+              !isCompact ? (
+                <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'rgba(144,224,239,0.8)', whiteSpace: 'nowrap' }}>
+                  {state.drawMode === 'manual' ? 'Manual Draw' : 'Auto Draw'}
+                </Typography>
+              ) : null
             }
             labelPlacement="start"
             sx={{ mr: 0, ml: 0, gap: 0.25 }}
@@ -242,38 +274,52 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
         </Toolbar>
       </AppBar>
 
-      {/* Main play area — ocean on top, hand on bottom */}
+      {/* ── Main area ── ocean scrolls, hand stays pinned at bottom */}
       <Box
         sx={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
+          minHeight: 0,     // ← critical: allows flex children to shrink below content size
           overflow: 'hidden',
           zIndex: 1,
         }}
       >
-        {/* Ocean — takes up the top/flex portion, passes height down */}
-        <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {/* Ocean — scrollable, fills all remaining space */}
+        <Box
+          ref={oceanScrollRef}
+          sx={{
+            flex: 1,
+            minHeight: 0,   // ← same trick for nested flex
+            overflowY: 'auto',
+            '&::-webkit-scrollbar': { width: 5 },
+            '&::-webkit-scrollbar-track': { background: 'rgba(0,0,0,0.15)' },
+            '&::-webkit-scrollbar-thumb': {
+              background: 'rgba(144,224,239,0.25)',
+              borderRadius: 3,
+            },
+          }}
+        >
           <OceanDisplay equations={state.ocean} />
         </Box>
 
-        {/* Hand + deck row — pinned at the bottom */}
+        {/* ── Hand panel ── sticky at bottom, always visible */}
         <Box
           sx={{
             borderTop: '2px solid rgba(144,224,239,0.15)',
-            background: 'rgba(2,20,60,0.55)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(2,20,60,0.6)',
+            backdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
-            px: 2,
-            pt: 1,
-            pb: 1,
-            gap: 2,
+            px: { xs: 1, sm: 2 },
+            pt: { xs: 0.75, sm: 1 },
+            pb: { xs: 0.75, sm: 1 },
+            gap: { xs: 1, sm: 2 },
             flexShrink: 0,
           }}
         >
           {/* Hand + equation controls */}
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0 }}>
             <Hand
               hand={state.hand}
               selectedIds={state.selectedIds}
@@ -286,15 +332,15 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
               isShaking={state.lastPlayWasInvalid}
             />
 
-            <Box sx={{ px: 1 }}>
+            <Box sx={{ px: { xs: 0.5, sm: 1 } }}>
               <EquationPreview
                 validation={validation}
                 selectedCount={state.selectedIds.size}
               />
             </Box>
 
-            {/* Cast + Give Up side by side */}
-            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', justifyContent: 'center' }}>
+            {/* Cast + Give Up */}
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
               <CastButton disabled={!validation.valid} onClick={handlePlay} />
               <GiveUpButton onClick={() => dispatch({ type: 'REQUEST_GIVE_UP' })} />
             </Box>
@@ -310,7 +356,7 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
             }}
           />
 
-          {/* Deck — on the right since new cards draw from the right */}
+          {/* Deck */}
           <Box sx={{ flexShrink: 0 }}>
             <Deck
               cardCount={state.deck.length}
