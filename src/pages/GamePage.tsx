@@ -164,7 +164,7 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
             }}
             onClick={onGoHome}
           >
-            🌊 Voyage
+            🌊 Nautilux: The Card Game
           </Typography>
 
           <Box sx={{ flex: 1 }} />
@@ -260,6 +260,7 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
               selectionDepth={selectionDepth}
               onCardClick={id => dispatch({ type: 'TOGGLE_SELECT', cardId: id })}
               onFocusChange={i => dispatch({ type: 'SET_FOCUS', index: i })}
+              onReorder={(from, to) => dispatch({ type: 'REORDER_HAND', fromIndex: from, toIndex: to })}
               isShaking={state.lastPlayWasInvalid}
             />
 

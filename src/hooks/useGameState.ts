@@ -24,7 +24,8 @@ type GameAction =
   | { type: 'CLEAR_SHAKE' }
   | { type: 'REQUEST_GIVE_UP' }
   | { type: 'CANCEL_GIVE_UP' }
-  | { type: 'CONFIRM_GIVE_UP' };
+  | { type: 'CONFIRM_GIVE_UP' }
+  | { type: 'REORDER_HAND'; fromIndex: number; toIndex: number };
 
 // ─── Initial state factory ────────────────────────────────────────────────────
 
@@ -158,6 +159,18 @@ function reducer(state: GameState, action: GameAction): GameState {
         score: 0,
         badge: null,
         showGiveUpConfirm: false,
+      };
+    }
+
+    case 'REORDER_HAND': {
+      if (state.phase !== 'playing') return state;
+      const newHand = [...state.hand];
+      const [moved] = newHand.splice(action.fromIndex, 1);
+      newHand.splice(action.toIndex, 0, moved);
+      return {
+        ...state,
+        hand: newHand,
+        focusedIndex: action.toIndex,
       };
     }
 
