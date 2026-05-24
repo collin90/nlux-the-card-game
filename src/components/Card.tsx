@@ -102,7 +102,7 @@ const CardComponent: React.FC<CardProps> = ({
   }
 
   if (isFocused && size !== 'stack-back') {
-    boxShadow = boxShadow + ', 0 0 0 2px #90E0EF';
+    boxShadow = boxShadow + ', 0 0 0 3px #FF69B4, 0 0 10px rgba(255,105,180,0.55)';
   }
 
   const liftY = isSelected && size === 'normal' ? -8 : 0;
