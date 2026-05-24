@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Box } from '@mui/material';
+import { Box, useTheme, useMediaQuery } from '@mui/material';
 import {
   DndContext,
   type DragEndEvent,
@@ -29,11 +29,12 @@ interface SortableCardSlotProps {
   isSelected: boolean;
   isResult: boolean;
   selectionDepth: number;
+  cardSize: 'normal' | 'small';
   onCardClick: (cardId: string) => void;
   onFocusChange: (index: number) => void;
   isShaking: boolean;
   focusRef: (el: HTMLElement | null) => void;
-  isDragActive: boolean; // true while any card is being dragged
+  isDragActive: boolean;
 }
 
 const SortableCardSlot: React.FC<SortableCardSlotProps> = ({
@@ -43,6 +44,7 @@ const SortableCardSlot: React.FC<SortableCardSlotProps> = ({
   isSelected,
   isResult,
   selectionDepth,
+  cardSize,
   onCardClick,
   onFocusChange,
   isShaking,
@@ -89,7 +91,7 @@ const SortableCardSlot: React.FC<SortableCardSlotProps> = ({
         onClick={() => {
           if (!isDragActive) onCardClick(card.id);
         }}
-        size="normal"
+        size={cardSize}
         shake={isShaking && isSelected}
       />
     </Box>
@@ -121,6 +123,10 @@ const Hand: React.FC<HandProps> = ({
   onReorder,
   isShaking,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const cardSize = isMobile ? 'small' : 'normal';
+
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
 
@@ -191,6 +197,7 @@ const Hand: React.FC<HandProps> = ({
               isSelected={selectedIds.has(card.id)}
               isResult={card.id === resultCard?.id}
               selectionDepth={selectionDepth}
+              cardSize={cardSize}
               onCardClick={onCardClick}
               onFocusChange={onFocusChange}
               isShaking={isShaking}
@@ -235,7 +242,7 @@ const Hand: React.FC<HandProps> = ({
               isSelected={selectedIds.has(activeCard.id)}
               isResult={activeCard.id === resultCard?.id}
               selectionDepth={selectedIds.has(activeCard.id) ? selectionDepth : 0}
-              size="normal"
+              size={cardSize}
             />
           </Box>
         ) : null}

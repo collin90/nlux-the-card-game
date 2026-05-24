@@ -4,7 +4,7 @@ import type { Card as CardType } from '../logic/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type CardSize = 'normal' | 'mini' | 'stack-back';
+export type CardSize = 'normal' | 'small' | 'mini' | 'stack-back';
 
 interface CardProps {
   card: CardType;
@@ -21,9 +21,10 @@ interface CardProps {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SIZE_CONFIG = {
-  normal: { width: 72, height: 100, fontSize: 16, rankSize: 13 },
-  mini: { width: 44, height: 62, fontSize: 10, rankSize: 9 },
-  'stack-back': { width: 40, height: 56, fontSize: 9, rankSize: 8 },
+  normal:       { width: 72, height: 100, fontSize: 16, rankSize: 13 },
+  small:        { width: 56, height: 78,  fontSize: 13, rankSize: 10 }, // mobile hand
+  mini:         { width: 44, height: 62,  fontSize: 10, rankSize: 9  },
+  'stack-back': { width: 40, height: 56,  fontSize: 9,  rankSize: 8  },
 };
 
 const SUIT_SYMBOLS: Record<string, string> = {
@@ -105,7 +106,7 @@ const CardComponent: React.FC<CardProps> = ({
     boxShadow = boxShadow + ', 0 0 0 3px #FF69B4, 0 0 10px rgba(255,105,180,0.55)';
   }
 
-  const liftY = isSelected && size === 'normal' ? -8 : 0;
+  const liftY = isSelected && (size === 'normal' || size === 'small') ? -8 : 0;
   const animation =
     shake && isSelected
       ? `${shakeAnim} 0.4s ease`
