@@ -169,18 +169,6 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
 
           <Box sx={{ flex: 1 }} />
 
-          <Chip
-            label={`Deck: ${state.deck.length}`}
-            size="small"
-            sx={{
-              bgcolor: 'rgba(0,180,216,0.12)',
-              color: '#90E0EF',
-              border: '1px solid rgba(0,180,216,0.25)',
-              fontSize: 11,
-              fontWeight: 600,
-            }}
-          />
-
           {bestScore !== null && (
             <Chip
               label={`Best: ${bestScore}`}
@@ -227,8 +215,8 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
           zIndex: 1,
         }}
       >
-        {/* Ocean — takes up the top/flex portion */}
-        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+        {/* Ocean — takes up the top/flex portion, passes height down */}
+        <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <OceanDisplay equations={state.ocean} />
         </Box>
 

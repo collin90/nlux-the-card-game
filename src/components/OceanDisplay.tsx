@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import type { PlayedEquation } from '../logic/types';
 import OceanZone from './OceanZone';
 
@@ -14,13 +14,17 @@ const OceanDisplay: React.FC<OceanDisplayProps> = ({ equations }) => {
   const twilight = equations.filter(e => e.zone === 'twilight');
   const midnight = equations.filter(e => e.zone === 'midnight');
 
-  // Auto-scroll to bottom when new equation is added
+  // Auto-scroll to show newly added equation's zone
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({
-        top: containerRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
+    if (equations.length === 0) return;
+    const latest = equations[equations.length - 1];
+    const zoneOrder = { daylight: 0, twilight: 1, midnight: 2 };
+    const zoneIndex = zoneOrder[latest.zone];
+    const container = containerRef.current;
+    if (!container) return;
+    const zones = container.querySelectorAll('[data-zone]');
+    if (zones[zoneIndex]) {
+      (zones[zoneIndex] as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [equations.length]);
 
@@ -29,35 +33,21 @@ const OceanDisplay: React.FC<OceanDisplayProps> = ({ equations }) => {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        borderTop: '2px solid rgba(144,224,239,0.15)',
-        position: 'relative',
+        height: '100%',
       }}
     >
-      <Typography
-        variant="caption"
-        sx={{
-          position: 'absolute',
-          top: 4,
-          right: 12,
-          color: 'rgba(144,224,239,0.4)',
-          fontSize: 10,
-          letterSpacing: 0.5,
-          zIndex: 1,
-        }}
-      >
-        THE OCEAN
-      </Typography>
-
       <Box
         ref={containerRef}
         sx={{
+          flex: 1,
           overflowY: 'auto',
-          maxHeight: 300,
-          '&::-webkit-scrollbar': { width: 4 },
+          display: 'flex',
+          flexDirection: 'column',
+          '&::-webkit-scrollbar': { width: 5 },
           '&::-webkit-scrollbar-track': { background: 'rgba(0,0,0,0.2)' },
           '&::-webkit-scrollbar-thumb': {
-            background: 'rgba(144,224,239,0.3)',
-            borderRadius: 2,
+            background: 'rgba(144,224,239,0.25)',
+            borderRadius: 3,
           },
         }}
       >
