@@ -70,7 +70,9 @@ const SortableCardSlot: React.FC<SortableCardSlotProps> = ({
         flexShrink: 0,
         transform: CSS.Transform.toString(transform),
         transition: transition ?? 'transform 200ms ease',
-        opacity: isDragging ? 0 : 1,
+        // Show a faint ghost in the slot so the gap is visible but the card
+        // doesn't fully disappear — the DragOverlay is the "real" dragging card
+        opacity: isDragging ? 0.18 : 1,
         cursor: isDragActive ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
         touchAction: 'none',
       }}
@@ -214,10 +216,21 @@ const Hand: React.FC<HandProps> = ({
         </Box>
       </SortableContext>
 
-      {/* Drag overlay — floating card that follows the cursor */}
-      <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
+      {/* Drag overlay — full-opacity card hovering below the hand line */}
+      <DragOverlay
+        dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}
+        style={{ cursor: 'grabbing' }}
+      >
         {activeCard ? (
-          <Box sx={{ transform: 'rotate(3deg)', filter: 'drop-shadow(0 12px 20px rgba(0,0,0,0.5))' }}>
+          <Box
+            sx={{
+              // translateY pushes it below the other cards so it looks "lifted out"
+              transform: 'translateY(18px) scale(1.06)',
+              filter: 'drop-shadow(0 16px 24px rgba(0,0,0,0.65))',
+              // slight rotation makes it look naturally held
+              rotate: '2deg',
+            }}
+          >
             <CardComponent
               card={activeCard}
               isSelected={selectedIds.has(activeCard.id)}
