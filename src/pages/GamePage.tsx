@@ -235,21 +235,6 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
             flexShrink: 0,
           }}
         >
-          {/* Deck */}
-          <Box sx={{ flexShrink: 0 }}>
-            <Deck cardCount={state.deck.length} />
-          </Box>
-
-          {/* Divider */}
-          <Box
-            sx={{
-              width: '1px',
-              alignSelf: 'stretch',
-              bgcolor: 'rgba(144,224,239,0.1)',
-              flexShrink: 0,
-            }}
-          />
-
           {/* Hand + equation controls */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             <Hand
@@ -276,6 +261,21 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
               <CastButton disabled={!validation.valid} onClick={handlePlay} />
               <GiveUpButton onClick={() => dispatch({ type: 'REQUEST_GIVE_UP' })} />
             </Box>
+          </Box>
+
+          {/* Divider */}
+          <Box
+            sx={{
+              width: '1px',
+              alignSelf: 'stretch',
+              bgcolor: 'rgba(144,224,239,0.1)',
+              flexShrink: 0,
+            }}
+          />
+
+          {/* Deck — on the right since new cards draw from the right */}
+          <Box sx={{ flexShrink: 0 }}>
+            <Deck cardCount={state.deck.length} />
           </Box>
         </Box>
       </Box>
