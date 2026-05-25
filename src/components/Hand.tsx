@@ -11,6 +11,7 @@ import {
   useSensors,
   closestCenter,
 } from '@dnd-kit/core';
+import { restrictToParentElement } from '@dnd-kit/modifiers';
 import {
   SortableContext,
   rectSortingStrategy,
@@ -222,21 +223,14 @@ const Hand: React.FC<HandProps> = ({
         </Box>
       </SortableContext>
 
-      {/* Drag overlay — full-opacity card hovering below the hand line */}
+      {/* Drag overlay — appears exactly where the grab started, stays in hand */}
       <DragOverlay
-        dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}
+        modifiers={[restrictToParentElement]}
+        dropAnimation={{ duration: 150, easing: 'ease-out' }}
         style={{ cursor: 'grabbing' }}
       >
         {activeCard ? (
-          <Box
-            sx={{
-              // translateY pushes it below the other cards so it looks "lifted out"
-              transform: 'translateY(18px) scale(1.06)',
-              filter: 'drop-shadow(0 16px 24px rgba(0,0,0,0.65))',
-              // slight rotation makes it look naturally held
-              rotate: '2deg',
-            }}
-          >
+          <Box sx={{ filter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.7))', lineHeight: 0 }}>
             <CardComponent
               card={activeCard}
               isSelected={selectedIds.has(activeCard.id)}
