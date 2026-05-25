@@ -1,12 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
 import {
+  type CollisionDetection,
   DndContext,
   type DragEndEvent,
   DragOverlay,
   type DragStartEvent,
   MouseSensor,
   TouchSensor,
+  pointerWithin,
   useSensor,
   useSensors,
   closestCenter,
@@ -167,10 +169,17 @@ const Hand: React.FC<HandProps> = ({
   const isDragActive = activeCardId !== null;
   const cardIds = hand.map(c => c.id);
 
+  // Pointer-first collisions make wrapped multi-row reordering feel natural on touch.
+  const collisionDetection: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) return pointerCollisions;
+    return closestCenter(args);
+  };
+
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
