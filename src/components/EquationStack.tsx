@@ -5,6 +5,7 @@ import CardComponent from './Card';
 
 interface EquationStackProps {
   equation: PlayedEquation;
+  compactFace?: boolean;
 }
 
 // Normal card dimensions
@@ -13,7 +14,7 @@ const CARD_H = 100;
 const OFFSET_X = 4; // px per card peeking to the right
 const OFFSET_Y = 7; // px per card peeking downward
 
-const EquationStack: React.FC<EquationStackProps> = ({ equation }) => {
+const EquationStack: React.FC<EquationStackProps> = ({ equation, compactFace = false }) => {
   const stackDepth = equation.lhs.length;
   const containerW = CARD_W + (stackDepth - 1) * OFFSET_X + 4;
   const containerH = CARD_H + (stackDepth - 1) * OFFSET_Y;
@@ -54,7 +55,7 @@ const EquationStack: React.FC<EquationStackProps> = ({ equation }) => {
           zIndex: stackDepth + 2,
         }}
       >
-        <CardComponent card={equation.rhs} size="normal" faceDown={false} />
+        <CardComponent card={equation.rhs} size="normal" faceDown={false} compactFace={compactFace} />
       </Box>
     </Box>
   );

@@ -16,15 +16,16 @@ interface CardProps {
   size?: CardSize;
   faceDown?: boolean;
   shake?: boolean;
+  compactFace?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SIZE_CONFIG = {
-  normal:       { width: 72, height: 100, fontSize: 16, rankSize: 13 },
-  small:        { width: 56, height: 78,  fontSize: 13, rankSize: 10 }, // mobile hand
-  mini:         { width: 44, height: 62,  fontSize: 10, rankSize: 9  },
-  'stack-back': { width: 40, height: 56,  fontSize: 9,  rankSize: 8  },
+  normal: { width: 72, height: 100, fontSize: 16, rankSize: 13 },
+  small: { width: 56, height: 78, fontSize: 13, rankSize: 10 }, // mobile hand
+  mini: { width: 44, height: 62, fontSize: 10, rankSize: 9 },
+  'stack-back': { width: 40, height: 56, fontSize: 9, rankSize: 8 },
 };
 
 const SUIT_SYMBOLS: Record<string, string> = {
@@ -72,6 +73,7 @@ const CardComponent: React.FC<CardProps> = ({
   size = 'normal',
   faceDown = false,
   shake = false,
+  compactFace = false,
 }) => {
   const cfg = SIZE_CONFIG[size];
   const suitSymbol = SUIT_SYMBOLS[card.suit];
@@ -111,8 +113,8 @@ const CardComponent: React.FC<CardProps> = ({
     shake && isSelected
       ? `${shakeAnim} 0.4s ease`
       : shake && isFocused
-      ? `${shakeAnimIdle} 0.4s ease`
-      : undefined;
+        ? `${shakeAnimIdle} 0.4s ease`
+        : undefined;
 
   // Face-down / stack-back rendering
   if (faceDown || size === 'stack-back') {
@@ -162,60 +164,92 @@ const CardComponent: React.FC<CardProps> = ({
         flexShrink: 0,
         '&:hover': onClick
           ? {
-              transform: `translateY(${liftY - 3}px)`,
-              boxShadow: isResult
-                ? '0 0 0 3px #00B4D8, 0 8px 20px rgba(0,0,0,0.5)'
-                : '0 6px 18px rgba(0,0,0,0.4)',
-            }
+            transform: `translateY(${liftY - 3}px)`,
+            boxShadow: isResult
+              ? '0 0 0 3px #00B4D8, 0 8px 20px rgba(0,0,0,0.5)'
+              : '0 6px 18px rgba(0,0,0,0.4)',
+          }
           : {},
         outline: 'none',
       }}
     >
-      {/* Top-left rank + suit */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1 }}>
-        <Box sx={{ fontWeight: 800, fontSize: cfg.rankSize, color: suitColor, lineHeight: 1.1 }}>
-          {card.rank}
-        </Box>
-        <Box sx={{ fontSize: cfg.rankSize - 1, color: suitColor, lineHeight: 1 }}>
-          {suitSymbol}
-        </Box>
-      </Box>
+      {compactFace ? (
+        <>
+          <Box
+            sx={{
+              textAlign: 'center',
+              fontWeight: 800,
+              fontSize: cfg.rankSize + (size === 'normal' ? 2 : 1),
+              color: suitColor,
+              lineHeight: 1.05,
+              mt: size === 'normal' ? 0.25 : 0,
+            }}
+          >
+            {card.rank}
+          </Box>
 
-      {/* Center suit (only on normal size) */}
-      {size === 'normal' && (
-        <Box
-          sx={{
-            fontSize: 22,
-            color: suitColor,
-            textAlign: 'center',
-            lineHeight: 1,
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-        >
-          {suitSymbol}
-        </Box>
+          <Box
+            sx={{
+              textAlign: 'center',
+              fontSize: size === 'normal' ? 28 : 20,
+              color: suitColor,
+              lineHeight: 1,
+              mt: size === 'normal' ? 0.5 : 0,
+              mb: size === 'normal' ? 0.25 : 0,
+            }}
+          >
+            {suitSymbol}
+          </Box>
+        </>
+      ) : (
+        <>
+          {/* Top-left rank + suit */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1 }}>
+            <Box sx={{ fontWeight: 800, fontSize: cfg.rankSize, color: suitColor, lineHeight: 1.1 }}>
+              {card.rank}
+            </Box>
+            <Box sx={{ fontSize: cfg.rankSize - 1, color: suitColor, lineHeight: 1 }}>
+              {suitSymbol}
+            </Box>
+          </Box>
+
+          {/* Center suit (only on normal size) */}
+          {size === 'normal' && (
+            <Box
+              sx={{
+                fontSize: 22,
+                color: suitColor,
+                textAlign: 'center',
+                lineHeight: 1,
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
+            >
+              {suitSymbol}
+            </Box>
+          )}
+
+          {/* Bottom-right rank + suit (rotated) */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              lineHeight: 1,
+              transform: 'rotate(180deg)',
+            }}
+          >
+            <Box sx={{ fontWeight: 800, fontSize: cfg.rankSize, color: suitColor, lineHeight: 1.1 }}>
+              {card.rank}
+            </Box>
+            <Box sx={{ fontSize: cfg.rankSize - 1, color: suitColor, lineHeight: 1 }}>
+              {suitSymbol}
+            </Box>
+          </Box>
+        </>
       )}
-
-      {/* Bottom-right rank + suit (rotated) */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          lineHeight: 1,
-          transform: 'rotate(180deg)',
-        }}
-      >
-        <Box sx={{ fontWeight: 800, fontSize: cfg.rankSize, color: suitColor, lineHeight: 1.1 }}>
-          {card.rank}
-        </Box>
-        <Box sx={{ fontSize: cfg.rankSize - 1, color: suitColor, lineHeight: 1 }}>
-          {suitSymbol}
-        </Box>
-      </Box>
     </Box>
   );
 };

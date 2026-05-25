@@ -29,32 +29,32 @@ const ZONE_CONFIG: Record<OceanZoneType, { background: string; emoji: string; bo
 // Dimensions of a full-scale EquationStack (at zoom 1)
 const BASE_STACK_W = 88;   // px — typical width including stack offset
 const BASE_STACK_H = 114;  // px — typical height including stack offset
-const ITEM_GAP     = 12;   // px — gap between stacks
-const H_PAD        = 14;   // px — left/right padding in content area
-const V_PAD        = 10;   // px — top/bottom padding in content area
+const ITEM_GAP = 12;   // px — gap between stacks
+const H_PAD = 14;   // px — left/right padding in content area
+const V_PAD = 10;   // px — top/bottom padding in content area
 
 const OceanZone: React.FC<OceanZoneProps> = ({ zone, equations }) => {
   const cfg = ZONE_CONFIG[zone];
 
-  const zoneRef    = useRef<HTMLDivElement>(null); // whole zone — measures height
+  const zoneRef = useRef<HTMLDivElement>(null); // whole zone — measures height
   const contentRef = useRef<HTMLDivElement>(null); // equation row — measures width
 
   const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
-    const zoneEl    = zoneRef.current;
+    const zoneEl = zoneRef.current;
     const contentEl = contentRef.current;
     if (!zoneEl || !contentEl) return;
 
     const compute = () => {
-      const zoneH    = zoneEl.getBoundingClientRect().height;
+      const zoneH = zoneEl.getBoundingClientRect().height;
       const contentW = contentEl.getBoundingClientRect().width;
       if (zoneH <= 0 || contentW <= 0) return;
 
       if (equations.length === 0) { setZoom(1); return; }
 
-      const N      = equations.length;
-      const availH = zoneH    - V_PAD * 2;
+      const N = equations.length;
+      const availH = zoneH - V_PAD * 2;
       const availW = contentW - H_PAD * 2;
 
       // Single-row: all stacks side-by-side, no wrapping
@@ -62,7 +62,7 @@ const OceanZone: React.FC<OceanZoneProps> = ({ zone, equations }) => {
       //   N * BASE_W * s + (N-1) * GAP  <=  availW   (width constraint)
       //   BASE_H * s                    <=  availH   (height constraint)
       const totalBaseW = N * BASE_STACK_W + (N - 1) * ITEM_GAP;
-      const widthScale  = availW / totalBaseW;
+      const widthScale = availW / totalBaseW;
       const heightScale = availH / BASE_STACK_H;
 
       const newZoom = Math.min(1, widthScale, heightScale);
@@ -123,7 +123,7 @@ const OceanZone: React.FC<OceanZoneProps> = ({ zone, equations }) => {
           // CSS zoom shrinks layout footprint AND rendered size —
           // the equation stacks compress to fit whatever space is available.
           <div key={eq.id} style={{ zoom, flexShrink: 0, lineHeight: 0 }}>
-            <EquationStack equation={eq} />
+            <EquationStack equation={eq} compactFace={zoom < 1} />
           </div>
         ))}
       </Box>
