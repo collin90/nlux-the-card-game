@@ -150,13 +150,13 @@ const RulesPage: React.FC<RulesPageProps> = ({ open, onClose }) => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 14, height: 14, borderRadius: '3px', background: '#ADE8F4', flexShrink: 0 }} />
               <Typography variant="caption" sx={{ color: 'rgba(173,232,244,0.8)' }}>
-                <strong>Daylight Zone</strong> — total value under 15 (e.g. A + A = 2)
+                <strong>Daylight Zone</strong> — total value under 20 (e.g. A + A = 2)
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 14, height: 14, borderRadius: '3px', background: '#0077B6', flexShrink: 0 }} />
               <Typography variant="caption" sx={{ color: 'rgba(173,232,244,0.8)' }}>
-                <strong>Twilight Zone</strong> — total value 15 to 30 (e.g. 5 + 5 = 10)
+                <strong>Twilight Zone</strong> — total value 20 to 30 (e.g. 5 + 5 = K)
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

@@ -85,7 +85,7 @@ export function getEquationPointValue(lhs: Card[], rhs: Card): number {
 }
 
 export function getZone(pointValue: number): OceanZone {
-  if (pointValue < 15) return 'daylight';
+  if (pointValue < 20) return 'daylight';
   if (pointValue <= 30) return 'twilight';
   return 'midnight';
 }
