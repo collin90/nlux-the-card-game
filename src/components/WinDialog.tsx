@@ -17,7 +17,9 @@ interface WinDialogProps {
   bestScore: number | null;
   badge: BadgeAnimal | null;
   showGiveUpConfirm: boolean;
+  admiringGame: boolean;
   onNewGame: () => void;
+  onAdmire: () => void;
   onCancelGiveUp: () => void;
   onConfirmGiveUp: () => void;
 }
@@ -38,8 +40,8 @@ const BadgeDisplay: React.FC<{ badge: BadgeAnimal }> = ({ badge }) => (
         badge.zone === 'daylight'
           ? 'linear-gradient(135deg, rgba(173,232,244,0.15), rgba(72,202,228,0.1))'
           : badge.zone === 'twilight'
-          ? 'linear-gradient(135deg, rgba(2,62,138,0.4), rgba(0,119,182,0.2))'
-          : 'linear-gradient(135deg, rgba(3,4,94,0.6), rgba(1,11,26,0.4))',
+            ? 'linear-gradient(135deg, rgba(2,62,138,0.4), rgba(0,119,182,0.2))'
+            : 'linear-gradient(135deg, rgba(3,4,94,0.6), rgba(1,11,26,0.4))',
       border: '1px solid rgba(144,224,239,0.2)',
       display: 'flex',
       flexDirection: 'column',
@@ -106,7 +108,9 @@ const WinDialog: React.FC<WinDialogProps> = ({
   bestScore,
   badge,
   showGiveUpConfirm,
+  admiringGame,
   onNewGame,
+  onAdmire,
   onCancelGiveUp,
   onConfirmGiveUp,
 }) => {
@@ -188,8 +192,8 @@ const WinDialog: React.FC<WinDialogProps> = ({
 
       {/* End Game Dialog */}
       <Dialog
-        open={isEndDialog}
-        onClose={() => {}}
+        open={isEndDialog && !admiringGame}
+        onClose={() => { }}
         slotProps={{
           paper: {
             sx: {
@@ -197,8 +201,8 @@ const WinDialog: React.FC<WinDialogProps> = ({
                 phase === 'win'
                   ? 'linear-gradient(135deg, #023e8a 0%, #0077B6 50%, #00B4D8 100%)'
                   : phase === 'giveup'
-                  ? 'linear-gradient(135deg, #1a1a2e 0%, #22223b 100%)'
-                  : 'linear-gradient(135deg, #03045E 0%, #023e8a 100%)',
+                    ? 'linear-gradient(135deg, #1a1a2e 0%, #22223b 100%)'
+                    : 'linear-gradient(135deg, #03045E 0%, #023e8a 100%)',
               border:
                 phase === 'win'
                   ? '1px solid rgba(144,224,239,0.5)'
@@ -254,7 +258,7 @@ const WinDialog: React.FC<WinDialogProps> = ({
           )}
           {phase !== 'giveup' && badge && <BadgeDisplay badge={badge} />}
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', pb: 3 }}>
+        <DialogActions sx={{ justifyContent: 'center', pb: 3, flexDirection: 'column', gap: 1 }}>
           <Button
             onClick={onNewGame}
             variant="contained"
@@ -276,6 +280,24 @@ const WinDialog: React.FC<WinDialogProps> = ({
           >
             New Voyage
           </Button>
+
+          {/* Admire Game — only for win and gameover, not give-up */}
+          {phase !== 'giveup' && (
+            <Button
+              onClick={onAdmire}
+              variant="text"
+              size="small"
+              sx={{
+                color: 'rgba(144,224,239,0.55)',
+                fontSize: 13,
+                fontWeight: 500,
+                letterSpacing: 0.2,
+                '&:hover': { color: 'rgba(144,224,239,0.85)', background: 'rgba(144,224,239,0.06)' },
+              }}
+            >
+              Admire Game 🔭
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </>

@@ -4,6 +4,7 @@ import {
   AppBar,
   Toolbar,
   Typography,
+  Button,
   IconButton,
   Tooltip,
   Chip,
@@ -40,6 +41,12 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
   const { state, dispatch, validation, resultCard, selectionDepth, canDraw } = useGameState();
   const { bestScore, updateBestScore } = useBestScore();
   const [showRules, setShowRules] = useState(false);
+  const [admiringGame, setAdmiringGame] = useState(false);
+
+  // Reset admire mode whenever a new game starts
+  useEffect(() => {
+    if (state.phase === 'playing') setAdmiringGame(false);
+  }, [state.phase]);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));   // < 600px
@@ -269,6 +276,53 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
           zIndex: 1,
         }}
       >
+        {/* Admire banner — shown when player closes end dialog to look at the board */}
+        {admiringGame && (state.phase === 'win' || state.phase === 'gameover') && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: { xs: 1.5, sm: 2.5 },
+              py: 1,
+              background: state.phase === 'win'
+                ? 'linear-gradient(90deg, rgba(0,119,182,0.55), rgba(0,180,216,0.45))'
+                : 'linear-gradient(90deg, rgba(3,4,94,0.7), rgba(2,62,138,0.6))',
+              borderBottom: '1px solid rgba(144,224,239,0.2)',
+              backdropFilter: 'blur(8px)',
+              flexShrink: 0,
+              gap: 2,
+              zIndex: 2,
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ color: 'rgba(173,232,244,0.85)', fontWeight: 600, fontSize: { xs: 12, sm: 13 } }}
+            >
+              {state.phase === 'win' ? '🎉 Voyage complete — admiring your ocean!' : '🪸 Stranded at Sea — take it all in.'}
+            </Typography>
+
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => dispatch({ type: 'NEW_GAME' })}
+              sx={{
+                flexShrink: 0,
+                background: 'linear-gradient(90deg, #0077B6, #00B4D8)',
+                color: '#fff',
+                fontWeight: 700,
+                borderRadius: '20px',
+                fontSize: { xs: 11, sm: 12 },
+                px: { xs: 1.5, sm: 2.5 },
+                boxShadow: '0 2px 10px rgba(0,180,216,0.35)',
+                '&:hover': { background: 'linear-gradient(90deg, #023e8a, #0077B6)' },
+              }}
+            >
+              New Voyage 🌊
+            </Button>
+          </Box>
+        )}
+
         {/* Ocean — fills remaining space, never scrolls */}
         <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <OceanDisplay equations={state.ocean} />
@@ -348,9 +402,11 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
         bestScore={bestScore}
         badge={state.badge}
         showGiveUpConfirm={state.showGiveUpConfirm}
+        admiringGame={admiringGame}
         onNewGame={() => dispatch({ type: 'NEW_GAME' })}
         onCancelGiveUp={() => dispatch({ type: 'CANCEL_GIVE_UP' })}
         onConfirmGiveUp={() => dispatch({ type: 'CONFIRM_GIVE_UP' })}
+        onAdmire={() => setAdmiringGame(true)}
       />
     </Box>
   );
