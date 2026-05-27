@@ -11,7 +11,7 @@ const EquationPreview: React.FC<EquationPreviewProps> = ({
   validation,
   selectedCount,
 }) => {
-  if (selectedCount < 2) {
+  if (selectedCount < 3) {
     return (
       <Box
         sx={{
@@ -74,7 +74,7 @@ const EquationPreview: React.FC<EquationPreviewProps> = ({
       }}
     >
       <Typography variant="caption" sx={{ color: '#e63946', fontSize: 12 }}>
-        Not a valid equation
+        {validation.reason ?? 'Not a valid equation'}
       </Typography>
     </Box>
   );

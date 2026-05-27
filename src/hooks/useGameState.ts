@@ -4,6 +4,7 @@ import { createDeck, shuffle } from '../logic/deck';
 import {
   validateEquation,
   hasAnyValidEquation,
+  findFirstValidEquation,
   computeScore,
   getEquationPointValue,
   getZone,
@@ -20,6 +21,7 @@ type GameAction =
   | { type: 'DRAW_CARD' }
   | { type: 'SET_DRAW_MODE'; mode: DrawMode }
   | { type: 'CLEAR_SELECTION' }
+  | { type: 'SHOW_HINT' }
   | { type: 'FOCUS_NEXT' }
   | { type: 'FOCUS_PREV' }
   | { type: 'SET_FOCUS'; index: number }
@@ -31,7 +33,7 @@ type GameAction =
 
 // ─── Initial state factory ────────────────────────────────────────────────────
 
-function createInitialState(): GameState {
+function createInitialState(drawMode: DrawMode = 'auto'): GameState {
   const deck = shuffle(createDeck());
   const hand = deck.slice(0, 7);
   const remainingDeck = deck.slice(7);
@@ -46,7 +48,8 @@ function createInitialState(): GameState {
     lastPlayWasInvalid: false,
     showGiveUpConfirm: false,
     badge: null,
-    drawMode: 'auto',
+    drawMode,
+    hintsUsed: 0,
   };
 }
 
@@ -160,6 +163,20 @@ function reducer(state: GameState, action: GameAction): GameState {
     case 'CLEAR_SELECTION':
       return { ...state, selectedIds: new Set(), lastPlayWasInvalid: false };
 
+    case 'SHOW_HINT': {
+      if (state.phase !== 'playing') return state;
+      const hint = findFirstValidEquation(state.hand);
+      if (state.hintsUsed >= 2) return state;
+      if (!hint) return state;
+      return {
+        ...state,
+        selectedIds: new Set(hint.map(c => c.id)),
+        focusedIndex: Math.max(0, state.hand.findIndex(c => c.id === hint[0].id)),
+        lastPlayWasInvalid: false,
+        hintsUsed: state.hintsUsed + 1,
+      };
+    }
+
     case 'FOCUS_NEXT':
       return {
         ...state,
@@ -216,8 +233,12 @@ function reducer(state: GameState, action: GameAction): GameState {
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
-export function useGameState() {
-  const [state, dispatch] = useReducer(reducer, undefined, createInitialState);
+export function useGameState(initialDrawMode: DrawMode = 'auto') {
+  const [state, dispatch] = useReducer(
+    reducer,
+    initialDrawMode,
+    createInitialState
+  );
 
   const selectedCards = useMemo(
     () => state.hand.filter(c => state.selectedIds.has(c.id)),
@@ -235,7 +256,7 @@ export function useGameState() {
   );
 
   const selectionDepth = useMemo(
-    () => (validation.valid ? selectedCards.length : 0),
+    () => (validation.valid || selectedCards.length < 3 ? selectedCards.length : 0),
     [validation, selectedCards.length]
   );
 

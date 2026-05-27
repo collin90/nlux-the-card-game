@@ -4,7 +4,9 @@ import { ZONE_ANIMALS } from './animals';
 // ─── Validation ──────────────────────────────────────────────────────────────
 
 export function validateEquation(selected: Card[]): ValidationResult {
-  if (selected.length < 3) return { valid: false };
+  if (selected.length < 3) {
+    return { valid: false, reason: 'Select at least 3 cards' };
+  }
 
   const faces = selected.filter(c => c.isFace);
   const numbers = selected.filter(c => !c.isFace);
@@ -20,7 +22,7 @@ export function validateEquation(selected: Card[]): ValidationResult {
         return { valid: true, lhs, rhs: c, preview };
       }
     }
-    return { valid: false };
+    return { valid: false, reason: 'One selected number must equal the sum of the others' };
   }
 
   // Case 2: Face result, number LHS — exactly 1 face, all others non-face with EQUAL value, ≥2 non-face
@@ -31,7 +33,11 @@ export function validateEquation(selected: Card[]): ValidationResult {
       const preview = buildPreview(numbers, rhs);
       return { valid: true, lhs: numbers, rhs, preview };
     }
-    return { valid: false };
+    return { valid: false, reason: 'Number cards must all share the same value for a face result' };
+  }
+
+  if (faces.length === 1 && numbers.length < 2) {
+    return { valid: false, reason: 'A face result needs at least 2 number cards' };
   }
 
   // Case 3: Face result, face LHS — all face cards, ≥3, any one as rhs if all others share same rank
@@ -44,10 +50,10 @@ export function validateEquation(selected: Card[]): ValidationResult {
         return { valid: true, lhs: rest, rhs: candidate, preview };
       }
     }
-    return { valid: false };
+    return { valid: false, reason: 'Face equations need the left side to share one rank' };
   }
 
-  return { valid: false };
+  return { valid: false, reason: 'Do not mix number and face cards on the left side' };
 }
 
 function buildPreview(lhs: Card[], rhs: Card): string {
@@ -58,6 +64,10 @@ function buildPreview(lhs: Card[], rhs: Card): string {
 // ─── Subset check for gameover detection ──────────────────────────────────────
 
 export function hasAnyValidEquation(hand: Card[]): boolean {
+  return findFirstValidEquation(hand) !== null;
+}
+
+export function findFirstValidEquation(hand: Card[]): Card[] | null {
   const n = hand.length;
   const maxMask = 1 << n;
   for (let mask = 0; mask < maxMask; mask++) {
@@ -66,9 +76,9 @@ export function hasAnyValidEquation(hand: Card[]): boolean {
       if (mask & (1 << i)) subset.push(hand[i]);
     }
     if (subset.length < 3) continue;
-    if (validateEquation(subset).valid) return true;
+    if (validateEquation(subset).valid) return subset;
   }
-  return false;
+  return null;
 }
 
 // ─── Scoring ─────────────────────────────────────────────────────────────────

@@ -9,13 +9,23 @@ import {
   Chip,
 } from '@mui/material';
 import Confetti from 'react-confetti';
-import type { GamePhase, BadgeAnimal } from '../logic/types';
+import type { GamePhase, BadgeAnimal, OceanZone } from '../logic/types';
+
+interface EndStats {
+  equationsPlayed: number;
+  cardsRemaining: number;
+  zoneCounts: Record<OceanZone, number>;
+  previousBest: number | null;
+  bestDelta: number | null;
+  hintsUsed: number;
+}
 
 interface WinDialogProps {
   phase: GamePhase;
   score: number;
   bestScore: number | null;
   badge: BadgeAnimal | null;
+  stats: EndStats;
   showGiveUpConfirm: boolean;
   admiringGame: boolean;
   onNewGame: () => void;
@@ -102,11 +112,61 @@ const ScoreDisplay: React.FC<{ score: number; bestScore: number | null; isWin: b
   );
 };
 
+const StatsDisplay: React.FC<{ stats: EndStats; score: number }> = ({ stats, score }) => {
+  const bestText =
+    stats.previousBest === null
+      ? 'First recorded score'
+      : stats.bestDelta === null
+        ? 'Best score unchanged'
+        : stats.bestDelta > 0
+          ? `${stats.bestDelta} better than previous best`
+          : stats.bestDelta === 0
+            ? 'Matched previous best'
+            : `${Math.abs(stats.bestDelta)} above previous best`;
+
+  return (
+    <Box
+      sx={{
+        my: 1.5,
+        p: 1.5,
+        borderRadius: '12px',
+        background: 'rgba(3, 4, 94, 0.22)',
+        border: '1px solid rgba(144,224,239,0.18)',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 1,
+        textAlign: 'left',
+      }}
+    >
+      {[
+        ['Final score', String(score)],
+        ['Equations', String(stats.equationsPlayed)],
+        ['Cards left', String(stats.cardsRemaining)],
+        ['Hints used', `${stats.hintsUsed} / 2`],
+        ['Best', bestText],
+        ['Daylight', String(stats.zoneCounts.daylight)],
+        ['Twilight', String(stats.zoneCounts.twilight)],
+        ['Midnight', String(stats.zoneCounts.midnight)],
+      ].map(([label, value]) => (
+        <Box key={label}>
+          <Typography variant="caption" sx={{ color: 'rgba(144,224,239,0.48)', fontSize: 10 }}>
+            {label}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#ADE8F4', fontWeight: 700, fontSize: 12 }}>
+            {value}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+};
+
 const WinDialog: React.FC<WinDialogProps> = ({
   phase,
   score,
   bestScore,
   badge,
+  stats,
   showGiveUpConfirm,
   admiringGame,
   onNewGame,
@@ -256,6 +316,7 @@ const WinDialog: React.FC<WinDialogProps> = ({
           {phase !== 'giveup' && (
             <ScoreDisplay score={score} bestScore={bestScore} isWin={phase === 'win'} />
           )}
+          {phase !== 'giveup' && <StatsDisplay stats={stats} score={score} />}
           {phase !== 'giveup' && badge && <BadgeDisplay badge={badge} />}
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 3, flexDirection: 'column', gap: 1 }}>

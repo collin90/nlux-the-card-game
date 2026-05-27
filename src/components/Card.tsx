@@ -11,7 +11,7 @@ interface CardProps {
   isSelected?: boolean;
   isResult?: boolean;
   isFocused?: boolean;
-  selectionDepth?: number; // 0 = not in valid selection, 3-7 = depth
+  selectionDepth?: number; // 0 = invalid/not selected, 1-2 = pending, 3-7 = valid depth
   onClick?: () => void;
   size?: CardSize;
   faceDown?: boolean;
@@ -44,6 +44,9 @@ const SELECTION_GREENS: Record<number, string> = {
   6: '#1b4332',
   7: '#081c15',
 };
+
+const PENDING_SELECTION_BLUE = '#ADE8F4';
+const FOCUS_OUTLINE = '#FFD166';
 
 const shakeAnim = keyframes`
   0%, 100% { transform: translateX(0) translateY(-8px); }
@@ -89,6 +92,9 @@ const CardComponent: React.FC<CardProps> = ({
     if (isSelected && selectionDepth >= 3) {
       bgColor = SELECTION_GREENS[Math.min(selectionDepth, 7)] ?? '#52b788';
       border = `1.5px solid ${bgColor}`;
+    } else if (isSelected && selectionDepth > 0) {
+      bgColor = 'rgba(173, 232, 244, 0.24)';
+      border = `1.5px solid ${PENDING_SELECTION_BLUE}`;
     } else if (isSelected && selectionDepth === 0) {
       // Invalid selection
       bgColor = 'rgba(198, 40, 40, 0.15)';
@@ -99,13 +105,15 @@ const CardComponent: React.FC<CardProps> = ({
       boxShadow = '0 0 0 3px #00B4D8, 0 4px 12px rgba(0,0,0,0.35)';
     } else if (isSelected && selectionDepth >= 3) {
       boxShadow = '0 0 0 2px #52b788, 0 6px 16px rgba(0,0,0,0.4)';
+    } else if (isSelected && selectionDepth > 0) {
+      boxShadow = `0 0 0 2px ${PENDING_SELECTION_BLUE}, 0 6px 16px rgba(0,0,0,0.4)`;
     } else if (isSelected && selectionDepth === 0) {
       boxShadow = '0 0 0 2px #e63946, 0 4px 12px rgba(0,0,0,0.35)';
     }
   }
 
   if (isFocused && size !== 'stack-back') {
-    boxShadow = boxShadow + ', 0 0 0 3px #FF69B4, 0 0 10px rgba(255,105,180,0.55)';
+    boxShadow = boxShadow + `, 0 0 0 3px ${FOCUS_OUTLINE}, 0 0 10px rgba(255, 209, 102, 0.55)`;
   }
 
   const liftY = isSelected && (size === 'normal' || size === 'small') ? -8 : 0;

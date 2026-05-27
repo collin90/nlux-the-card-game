@@ -32,7 +32,7 @@ export type GamePhase = 'playing' | 'win' | 'giveup' | 'gameover';
 export type DrawMode = 'auto' | 'manual';
 
 export type ValidationResult =
-  | { valid: false }
+  | { valid: false; reason?: string }
   | { valid: true; lhs: Card[]; rhs: Card; preview: string };
 
 export interface GameState {
@@ -47,4 +47,5 @@ export interface GameState {
   showGiveUpConfirm: boolean;
   badge: BadgeAnimal | null;
   drawMode: DrawMode;
+  hintsUsed: number;
 }

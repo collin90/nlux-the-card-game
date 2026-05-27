@@ -184,15 +184,21 @@ const RulesPage: React.FC<RulesPageProps> = ({ open, onClose }) => {
         <Section title="Keyboard Controls" emoji="⌨️">
           <Box sx={{ pl: 1.5 }}>
             {[
+              ['Click', 'Select or deselect a card'],
+              ['Drag', 'Reorder cards with the mouse'],
+              ['Hint', 'Highlight a valid equation; 2 uses per game'],
               ['← →', 'Navigate hand cards'],
               ['Space', 'Select / deselect focused card'],
+              ['↑', 'Pick up or place down a focused card'],
+              ['← →', 'Move a picked-up card'],
+              ['↓', 'Place a picked-up card'],
               ['Enter', 'Cast selected equation into Ocean'],
               ['Escape', 'Clear selection'],
               ['N', 'New voyage'],
               ['?', 'Toggle these rules'],
               ['G', 'Give up'],
             ].map(([key, desc]) => (
-              <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+              <Box key={`${key}-${desc}`} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <Chip
                   label={key}
                   size="small"

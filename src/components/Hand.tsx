@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
 import {
   type CollisionDetection,
@@ -38,6 +38,8 @@ interface SortableCardSlotProps {
   isShaking: boolean;
   focusRef: (el: HTMLElement | null) => void;
   isDragActive: boolean;
+  showFocusOutline: boolean;
+  isKeyboardReordering: boolean;
 }
 
 const SortableCardSlot: React.FC<SortableCardSlotProps> = ({
@@ -53,6 +55,8 @@ const SortableCardSlot: React.FC<SortableCardSlotProps> = ({
   isShaking,
   focusRef,
   isDragActive,
+  showFocusOutline,
+  isKeyboardReordering,
 }) => {
   const {
     attributes,
@@ -62,6 +66,12 @@ const SortableCardSlot: React.FC<SortableCardSlotProps> = ({
     transition,
     isDragging,
   } = useSortable({ id: card.id });
+
+  const sortableTransform = CSS.Transform.toString(transform);
+  const visualTransform = [
+    sortableTransform,
+    isKeyboardReordering ? 'translateY(-12px)' : '',
+  ].filter(Boolean).join(' ');
 
   return (
     <Box
@@ -73,13 +83,27 @@ const SortableCardSlot: React.FC<SortableCardSlotProps> = ({
       sx={{
         outline: 'none',
         flexShrink: 0,
-        transform: CSS.Transform.toString(transform),
+        position: 'relative',
+        transform: visualTransform || undefined,
         transition: transition ?? 'transform 200ms ease',
         // Show a faint ghost in the slot so the gap is visible but the card
         // doesn't fully disappear — the DragOverlay is the "real" dragging card
         opacity: isDragging ? 0.18 : 1,
         cursor: isDragActive ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
         touchAction: 'none',
+        zIndex: isKeyboardReordering ? 3 : 'auto',
+        '&::before': isKeyboardReordering
+          ? {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '8px',
+            backgroundColor: 'rgba(3, 4, 94, 0.38)',
+            filter: 'blur(1px)',
+            transform: 'translate(7px, 14px)',
+            zIndex: -1,
+          }
+          : {},
       }}
       {...attributes}
       {...listeners}
@@ -89,7 +113,7 @@ const SortableCardSlot: React.FC<SortableCardSlotProps> = ({
         card={card}
         isSelected={isSelected}
         isResult={isResult}
-        isFocused={isFocused && !isDragActive}
+        isFocused={isFocused && showFocusOutline && !isDragActive}
         selectionDepth={isSelected ? selectionDepth : 0}
         onClick={() => {
           if (!isDragActive) onCardClick(card.id);
@@ -113,6 +137,8 @@ interface HandProps {
   onFocusChange: (index: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
   isShaking: boolean;
+  showFocusOutline: boolean;
+  keyboardReorderActive: boolean;
 }
 
 const Hand: React.FC<HandProps> = ({
@@ -125,13 +151,49 @@ const Hand: React.FC<HandProps> = ({
   onFocusChange,
   onReorder,
   isShaking,
+  showFocusOutline,
+  keyboardReorderActive,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const cardSize = isMobile ? 'small' : 'normal';
 
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
+  const slotRefs = useRef(new Map<string, HTMLElement>());
+  const previousRects = useRef(new Map<string, DOMRect>());
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    const nextRects = new Map<string, DOMRect>();
+
+    hand.forEach((card) => {
+      const el = slotRefs.current.get(card.id);
+      if (!el) return;
+
+      const nextRect = el.getBoundingClientRect();
+      const previousRect = previousRects.current.get(card.id);
+      nextRects.set(card.id, nextRect);
+
+      if (!previousRect) return;
+
+      const deltaX = previousRect.left - nextRect.left;
+      const deltaY = previousRect.top - nextRect.top;
+      if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
+
+      el.animate(
+        [
+          { transform: `translate(${deltaX}px, ${deltaY}px)` },
+          { transform: 'translate(0, 0)' },
+        ],
+        {
+          duration: 180,
+          easing: 'cubic-bezier(0.2, 0, 0, 1)',
+        }
+      );
+    });
+
+    previousRects.current = nextRects;
+  }, [hand]);
 
   // Roving focus: when focusedIndex changes, focus the right element
   useEffect(() => {
@@ -211,8 +273,17 @@ const Hand: React.FC<HandProps> = ({
               onCardClick={onCardClick}
               onFocusChange={onFocusChange}
               isShaking={isShaking}
-              focusRef={(el) => { cardRefs.current[i] = el; }}
+              focusRef={(el) => {
+                cardRefs.current[i] = el;
+                if (el) {
+                  slotRefs.current.set(card.id, el);
+                } else {
+                  slotRefs.current.delete(card.id);
+                }
+              }}
               isDragActive={isDragActive}
+              showFocusOutline={showFocusOutline}
+              isKeyboardReordering={keyboardReorderActive && i === focusedIndex}
             />
           ))}
 

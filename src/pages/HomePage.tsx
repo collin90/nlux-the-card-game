@@ -1,9 +1,18 @@
 import React from 'react';
 import { Box, Button, Typography, Chip, keyframes } from '@mui/material';
 import WavesIcon from '@mui/icons-material/Waves';
+import AutoModeIcon from '@mui/icons-material/AutoMode';
+import TouchAppIcon from '@mui/icons-material/TouchApp';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import type { DrawMode } from '../logic/types';
 
 interface HomePageProps {
   bestScore: number | null;
+  drawMode: DrawMode;
+  soundEnabled: boolean;
+  onDrawModeChange: (mode: DrawMode) => void;
+  onToggleSound: () => void;
   onStart: () => void;
   onRules: () => void;
 }
@@ -24,7 +33,15 @@ const shimmer = keyframes`
   100% { background-position: 200% center; }
 `;
 
-const HomePage: React.FC<HomePageProps> = ({ bestScore, onStart, onRules }) => {
+const HomePage: React.FC<HomePageProps> = ({
+  bestScore,
+  drawMode,
+  soundEnabled,
+  onDrawModeChange,
+  onToggleSound,
+  onStart,
+  onRules,
+}) => {
   return (
     <Box
       sx={{
@@ -114,6 +131,43 @@ const HomePage: React.FC<HomePageProps> = ({ bestScore, onStart, onRules }) => {
 
         {/* Action buttons */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, alignItems: 'center', mt: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {[
+              { mode: 'auto' as const, label: 'Automatic Draw', icon: <AutoModeIcon fontSize="small" /> },
+              { mode: 'manual' as const, label: 'Manual Draw', icon: <TouchAppIcon fontSize="small" /> },
+            ].map(option => {
+              const selected = drawMode === option.mode;
+              return (
+                <Button
+                  key={option.mode}
+                  variant={selected ? 'contained' : 'outlined'}
+                  size="small"
+                  startIcon={option.icon}
+                  onClick={() => onDrawModeChange(option.mode)}
+                  sx={{
+                    minWidth: 154,
+                    borderRadius: '999px',
+                    py: 0.8,
+                    px: 1.5,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    textTransform: 'none',
+                    color: selected ? '#023e8a' : '#ADE8F4',
+                    background: selected ? '#ADE8F4' : 'rgba(3, 4, 94, 0.18)',
+                    border: selected ? '1px solid #ADE8F4' : '1px solid rgba(173,232,244,0.35)',
+                    boxShadow: selected ? '0 4px 14px rgba(173,232,244,0.28)' : 'none',
+                    '&:hover': {
+                      background: selected ? '#CAF0F8' : 'rgba(173,232,244,0.1)',
+                      borderColor: selected ? '#CAF0F8' : 'rgba(173,232,244,0.55)',
+                    },
+                  }}
+                >
+                  {option.label}
+                </Button>
+              );
+            })}
+          </Box>
+
           <Button
             variant="contained"
             size="large"
@@ -150,6 +204,24 @@ const HomePage: React.FC<HomePageProps> = ({ bestScore, onStart, onRules }) => {
             }}
           >
             How to Play
+          </Button>
+
+          <Button
+            variant="text"
+            size="small"
+            onClick={onToggleSound}
+            startIcon={soundEnabled ? <VolumeUpIcon /> : <VolumeOffIcon />}
+            sx={{
+              color: soundEnabled ? '#FFD166' : 'rgba(144,224,239,0.58)',
+              fontWeight: 700,
+              textTransform: 'none',
+              '&:hover': {
+                color: soundEnabled ? '#FFE08A' : '#ADE8F4',
+                background: 'rgba(144,224,239,0.08)',
+              },
+            }}
+          >
+            Sound {soundEnabled ? 'On' : 'Off'}
           </Button>
         </Box>
       </Box>

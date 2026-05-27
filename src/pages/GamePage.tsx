@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import {
   Box,
   AppBar,
@@ -16,8 +16,12 @@ import {
 } from '@mui/material';
 import HelpOutlinedIcon from '@mui/icons-material/HelpOutlined';
 import AddIcon from '@mui/icons-material/Add';
+import LightbulbOutlinedIcon from '@mui/icons-material/LightbulbOutlined';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import { useGameState } from '../hooks/useGameState';
 import { useBestScore } from '../hooks/useBestScore';
+import { useGameSounds } from '../hooks/useGameSounds';
 import Hand from '../components/Hand';
 import Deck from '../components/Deck';
 import OceanDisplay from '../components/OceanDisplay';
@@ -26,8 +30,12 @@ import CastButton from '../components/CastButton';
 import GiveUpButton from '../components/GiveUpButton';
 import WinDialog from '../components/WinDialog';
 import RulesPage from './RulesPage';
+import type { DrawMode } from '../logic/types';
 
 interface GamePageProps {
+  initialDrawMode: DrawMode;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
   onGoHome: () => void;
 }
 
@@ -37,26 +45,55 @@ const waveAnim = keyframes`
   100% { transform: translateX(0) scaleY(1); }
 `;
 
-const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
-  const { state, dispatch, validation, resultCard, selectionDepth, canDraw } = useGameState();
+const GamePage: React.FC<GamePageProps> = ({
+  initialDrawMode,
+  soundEnabled,
+  onToggleSound,
+  onGoHome,
+}) => {
+  const { state, dispatch, validation, resultCard, selectionDepth, canDraw } = useGameState(initialDrawMode);
   const { bestScore, updateBestScore } = useBestScore();
+  const playSound = useGameSounds(soundEnabled);
   const [showRules, setShowRules] = useState(false);
   const [admiringGame, setAdmiringGame] = useState(false);
+  const [showKeyboardFocus, setShowKeyboardFocus] = useState(false);
+  const [keyboardReorderActive, setKeyboardReorderActive] = useState(false);
+  const [endSummary, setEndSummary] = useState<{
+    previousBest: number | null;
+    bestDelta: number | null;
+  } | null>(null);
+  const previousPhase = useRef(state.phase);
 
   // Reset admire mode whenever a new game starts
   useEffect(() => {
     if (state.phase === 'playing') setAdmiringGame(false);
   }, [state.phase]);
 
+  useEffect(() => {
+    if (previousPhase.current !== 'win' && state.phase === 'win') {
+      playSound('win');
+    }
+    previousPhase.current = state.phase;
+  }, [state.phase, playSound]);
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));   // < 600px
 
   // Update best score when game ends (not on give-up)
   useEffect(() => {
-    if ((state.phase === 'win' || state.phase === 'gameover') && state.score >= 0) {
+    if (state.phase === 'playing') {
+      setEndSummary(null);
+      return;
+    }
+
+    if ((state.phase === 'win' || state.phase === 'gameover') && state.score >= 0 && endSummary === null) {
+      setEndSummary({
+        previousBest: bestScore,
+        bestDelta: bestScore === null ? null : bestScore - state.score,
+      });
       updateBestScore(state.score);
     }
-  }, [state.phase, state.score, updateBestScore]);
+  }, [state.phase, state.score, bestScore, endSummary, updateBestScore]);
 
   // Keyboard handler
   const handleKeyDown = useCallback(
@@ -67,22 +104,55 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
       switch (e.key) {
         case 'ArrowLeft':
           e.preventDefault();
-          dispatch({ type: 'FOCUS_PREV' });
+          setShowKeyboardFocus(true);
+          if (keyboardReorderActive) {
+            const toIndex = Math.max(state.focusedIndex - 1, 0);
+            if (toIndex !== state.focusedIndex) {
+              dispatch({ type: 'REORDER_HAND', fromIndex: state.focusedIndex, toIndex });
+            }
+          } else {
+            dispatch({ type: 'FOCUS_PREV' });
+          }
           break;
         case 'ArrowRight':
           e.preventDefault();
-          dispatch({ type: 'FOCUS_NEXT' });
+          setShowKeyboardFocus(true);
+          if (keyboardReorderActive) {
+            const toIndex = Math.min(state.focusedIndex + 1, state.hand.length - 1);
+            if (toIndex !== state.focusedIndex) {
+              dispatch({ type: 'REORDER_HAND', fromIndex: state.focusedIndex, toIndex });
+            }
+          } else {
+            dispatch({ type: 'FOCUS_NEXT' });
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setShowKeyboardFocus(true);
+          setKeyboardReorderActive(prev => !prev);
+          break;
+        case 'ArrowDown':
+          if (keyboardReorderActive) {
+            e.preventDefault();
+            setKeyboardReorderActive(false);
+          }
           break;
         case ' ':
           e.preventDefault();
           {
             const focusedCard = state.hand[state.focusedIndex];
-            if (focusedCard) dispatch({ type: 'TOGGLE_SELECT', cardId: focusedCard.id });
+            if (focusedCard) {
+              playSound('select');
+              dispatch({ type: 'TOGGLE_SELECT', cardId: focusedCard.id });
+            }
           }
           break;
         case 'Enter':
           e.preventDefault();
-          if (validation.valid) dispatch({ type: 'PLAY_EQUATION' });
+          if (validation.valid) {
+            playSound('cast');
+            dispatch({ type: 'PLAY_EQUATION' });
+          }
           break;
         case 'Escape':
           e.preventDefault();
@@ -109,7 +179,7 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
           break;
       }
     },
-    [state, dispatch, validation, showRules]
+    [state, dispatch, validation, showRules, keyboardReorderActive, playSound]
   );
 
   useEffect(() => {
@@ -126,11 +196,18 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
   }, [state.lastPlayWasInvalid, dispatch]);
 
   const handlePlay = () => {
-    if (validation.valid) dispatch({ type: 'PLAY_EQUATION' });
+    if (validation.valid) {
+      playSound('cast');
+      dispatch({ type: 'PLAY_EQUATION' });
+    }
   };
 
   return (
     <Box
+      onPointerDown={() => {
+        setShowKeyboardFocus(false);
+        setKeyboardReorderActive(false);
+      }}
       sx={{
         // 100dvh respects mobile browser chrome; fall back to 100vh
         height: '100dvh',
@@ -253,6 +330,16 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
             </IconButton>
           </Tooltip>
 
+          <Tooltip title={soundEnabled ? 'Sound on' : 'Sound off'}>
+            <IconButton
+              size="small"
+              onClick={onToggleSound}
+              sx={{ color: soundEnabled ? '#FFD166' : 'rgba(144,224,239,0.55)' }}
+            >
+              {soundEnabled ? <VolumeUpIcon fontSize="small" /> : <VolumeOffIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+
           <Tooltip title="New Game (N)">
             <IconButton
               size="small"
@@ -351,13 +438,34 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
               resultCard={resultCard}
               focusedIndex={state.focusedIndex}
               selectionDepth={selectionDepth}
-              onCardClick={id => dispatch({ type: 'TOGGLE_SELECT', cardId: id })}
+              showFocusOutline={showKeyboardFocus}
+              keyboardReorderActive={keyboardReorderActive}
+              onCardClick={id => {
+                playSound('select');
+                dispatch({ type: 'TOGGLE_SELECT', cardId: id });
+              }}
               onFocusChange={i => dispatch({ type: 'SET_FOCUS', index: i })}
               onReorder={(from, to) => dispatch({ type: 'REORDER_HAND', fromIndex: from, toIndex: to })}
               isShaking={state.lastPlayWasInvalid}
             />
 
             <Box sx={{ px: { xs: 0.5, sm: 1 } }}>
+              {keyboardReorderActive && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 0.5 }}>
+                  <Chip
+                    label="Reordering"
+                    size="small"
+                    sx={{
+                      height: 22,
+                      bgcolor: 'rgba(255, 209, 102, 0.14)',
+                      color: '#FFD166',
+                      border: '1px solid rgba(255, 209, 102, 0.35)',
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
+                  />
+                </Box>
+              )}
               <EquationPreview
                 validation={validation}
                 selectedCount={state.selectedIds.size}
@@ -367,6 +475,38 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
             {/* Cast + Give Up */}
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', justifyContent: 'center' }}>
               <CastButton disabled={!validation.valid} onClick={handlePlay} />
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={state.hintsUsed >= 2}
+                onClick={() => {
+                  playSound('hint');
+                  dispatch({ type: 'SHOW_HINT' });
+                }}
+                startIcon={<LightbulbOutlinedIcon sx={{ fontSize: 16 }} />}
+                sx={{
+                  px: 1.5,
+                  py: 0.6,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  borderRadius: '8px',
+                  color: '#FFD166',
+                  border: '1px solid rgba(255, 209, 102, 0.4)',
+                  background: 'rgba(255, 209, 102, 0.08)',
+                  textTransform: 'none',
+                  '&.Mui-disabled': {
+                    color: 'rgba(255,255,255,0.25)',
+                    borderColor: 'rgba(144,224,239,0.14)',
+                    background: 'rgba(30,50,80,0.28)',
+                  },
+                  '&:hover': {
+                    borderColor: 'rgba(255, 209, 102, 0.7)',
+                    background: 'rgba(255, 209, 102, 0.14)',
+                  },
+                }}
+              >
+                Hint ({Math.max(0, 2 - state.hintsUsed)})
+              </Button>
               <GiveUpButton onClick={() => dispatch({ type: 'REQUEST_GIVE_UP' })} />
             </Box>
           </Box>
@@ -401,6 +541,18 @@ const GamePage: React.FC<GamePageProps> = ({ onGoHome }) => {
         score={state.score}
         bestScore={bestScore}
         badge={state.badge}
+        stats={{
+          equationsPlayed: state.ocean.length,
+          cardsRemaining: state.hand.length + state.deck.length,
+          zoneCounts: {
+            daylight: state.ocean.filter(eq => eq.zone === 'daylight').length,
+            twilight: state.ocean.filter(eq => eq.zone === 'twilight').length,
+            midnight: state.ocean.filter(eq => eq.zone === 'midnight').length,
+          },
+          previousBest: endSummary?.previousBest ?? null,
+          bestDelta: endSummary?.bestDelta ?? null,
+          hintsUsed: state.hintsUsed,
+        }}
         showGiveUpConfirm={state.showGiveUpConfirm}
         admiringGame={admiringGame}
         onNewGame={() => dispatch({ type: 'NEW_GAME' })}
